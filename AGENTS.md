@@ -43,11 +43,11 @@ All data below is merged and passed to `docxtpl.DocxTemplate.render()`:
 
 ### From `context.txt`
 - Format: `varname = value` (one per line)
-- Lines are parsed, stripped, and empty/invalid lines are skipped.
+- Lines are parsed, startin with #, and empty/invalid lines are skipped.
 
 ### From markdown files
 - Every `.md` file is read and its content is added to the context.
-- The variable name is the filename without extension, with whitespace replaced by underscores.
+- The variable name is the filename without extension, with whitespace replaced by underscores, accents removed and snake_case.
 - Example: `intro.md` → context key `intro`, `chapter 1.md` → context key `chapter_1`.
 
 ### From assets folder
@@ -64,7 +64,7 @@ All data below is merged and passed to `docxtpl.DocxTemplate.render()`:
 Example template usage:
 
 ```jinja2
-{{ markdown(intro) }}
+{{ intro|markdown }}
 ```
 
 ## CLI (`__main__.py`)
