@@ -45,7 +45,7 @@ my_project/
 
 ### `template.docx`
 
-A standard Word document using [docxtpl](https://github.com/elapouya/python-docxtpl) syntax. Use Jinja2 placeholders like `{{ variable }}` or `{{ intro|markdown }}`.
+A standard Word document using [docxtpl](https://github.com/elapouya/python-docxtpl) syntax. Use Jinja2 placeholders like `{{ variable }}` or `{{p intro|markdown }}`.
 
 ### `context.txt`
 
@@ -83,10 +83,16 @@ name = John Doe
 
 The result will be `# Hello John Doe`, then stored in context key `intro`.
 
+Use the `subdoc` global function to embed `.docx` files from the `assets/` folder:
+
+```jinja2
+{{p subdoc("cover.docx") }}
+```
+
 Use the `markdown` filter in your template:
 
 ```jinja2
-{{ intro|markdown }}
+{{p intro|markdown }}
 ```
 
 ### Assets

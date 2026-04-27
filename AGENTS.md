@@ -60,6 +60,12 @@ All data below is merged and passed to `docxtpl.DocxTemplate.render()`:
 - Key: filename without extension. Value: `{"path": Path, "caption": ""}`.
 - `caption` is empty for now (future: read from EXIF metadata).
 
+### `subdoc` global function
+
+- A Jinja2 global named `subdoc` is registered in the docxtpl environment.
+- Pass the relative path (relative to `assets/`) as the argument.
+- The returned subdocument can be inserted into the template using docxtpl's subdocument syntax (e.g., `{{p subdoc("cover.docx") }}`).
+
 ### `markdown` Jinja2 filter
 - A custom filter named `markdown` is registered in the docxtpl environment.
 - For now it simply returns the raw markdown text unchanged.
@@ -68,7 +74,7 @@ All data below is merged and passed to `docxtpl.DocxTemplate.render()`:
 Example template usage:
 
 ```jinja2
-{{ intro|markdown }}
+{{p intro|markdown }}
 ```
 
 ## CLI (`__main__.py`)

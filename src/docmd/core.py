@@ -48,6 +48,7 @@ class RenderEnv:
     tpl: DocxTemplate
     jinja_env: Environment
     temp_folder: Path
+    assets_folder: Path
 
 def render_docx(template_path: Path, context: dict, output_path: Path) -> Path:
     temp_folder = Path(tempfile.mkdtemp(prefix="docmd_"))
@@ -55,6 +56,7 @@ def render_docx(template_path: Path, context: dict, output_path: Path) -> Path:
         tpl=DocxTemplate(str(template_path)),
         jinja_env=Environment(),
         temp_folder=temp_folder,
+        assets_folder=template_path.parent / "assets",
     )
     try:
         register_filters(renv)
@@ -80,7 +82,7 @@ def run(folder: Path, output: Path) -> Path:
         from .pdf import convert_to_pdf
 
         result = convert_to_pdf(docx_path, output)
-        docx_path.unlink()
+        # docx_path.unlink()
         return result
 
     return render_docx(template_path, context, output)
