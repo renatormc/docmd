@@ -7,9 +7,10 @@ Convert markdown files to **docx** or **pdf** using `docxtpl` templates and Libr
 ```
 src/docmd/
 ├── __init__.py          # Public API: convert()
-├── __main__.py          # CLI entry point (click)
+├── __main__.py          # CLI entry point (argparse)
 ├── core.py              # Core conversion logic
 ├── assets.py            # Asset (image) handling
+├── filters.py           # Custom Jinja2 filters (markdown, etc.)
 └── pdf.py               # PDF export via LibreOffice
 ```
 
@@ -43,11 +44,14 @@ All data below is merged and passed to `docxtpl.DocxTemplate.render()`:
 
 ### From `context.txt`
 - Format: `varname = value` (one per line)
-- Lines are parsed, startin with #, and empty/invalid lines are skipped.
+- Lines starting with `#`, empty lines, and lines without `=` are skipped.
+- Parsed first so its variables are available for substitution in markdown files.
 
 ### From markdown files
-- Every `.md` file is read and its content is added to the context.
-- The variable name is the filename without extension, with whitespace replaced by underscores, accents removed and snake_case.
+- Every `.md` file is read and its content is processed through Jinja2 with the variables from `context.txt`.
+- This means you can use `{{ varname }}` inside `.md` files to reference values from `context.txt`.
+- After substitution, the result is added to the context.
+- The variable name is the filename without extension, with whitespace replaced by underscores.
 - Example: `intro.md` → context key `intro`, `chapter 1.md` → context key `chapter_1`.
 
 ### From assets folder
@@ -69,7 +73,7 @@ Example template usage:
 
 ## CLI (`__main__.py`)
 
-Uses **click**:
+Uses **argparse**:
 
 ```bash
 docmd <folder> <output>
@@ -89,7 +93,6 @@ docmd <folder> <output>
 
 ## Dependencies
 
-- `click` — CLI framework
 - `docxtpl` — Jinja2-based docx template engine
 - `python-magic` (optional) — MIME type detection for assets
 - LibreOffice installed system-wide for PDF conversion
@@ -99,3 +102,5 @@ docmd <folder> <output>
 - `uv run docmd <folder> <output>` — run the CLI
 - `uv add <pkg>` — add a dependency
 - `uv sync` — sync environment
+- `uv run pytest` — run all tests
+- `uv run pytest -v` — run tests verbosely
