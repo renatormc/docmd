@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from docmd.core import _build_context, render_docx
+from docmd.core import _build_context, DocxRenderer
 
 
 def test_build_context_empty(tmp_path: Path):
@@ -61,7 +61,8 @@ def test_build_context_no_assets(tmp_path: Path):
 def test_render_docx(template_path: Path, tmp_path: Path):
     output = tmp_path / "out.docx"
     context = {"name": "World"}
-    result = render_docx(template_path, context, output)
+    r = DocxRenderer()
+    result = r.render_docx(template_path, context, output)
     assert result == output
     assert output.is_file()
     assert output.stat().st_size > 0
@@ -70,5 +71,6 @@ def test_render_docx(template_path: Path, tmp_path: Path):
 def test_render_docx_with_markdown_filter(template_path: Path, tmp_path: Path):
     output = tmp_path / "out.docx"
     context = {"intro": "# Hello"}
-    result = render_docx(template_path, context, output)
+    r = DocxRenderer()
+    result = r.render_docx(template_path, context, output)
     assert result.is_file()

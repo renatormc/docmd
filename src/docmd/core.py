@@ -2,6 +2,7 @@ import shutil
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
 from docxtpl import DocxTemplate
 from jinja2 import Environment, Template
@@ -49,23 +50,27 @@ class RenderEnv:
     jinja_env: Environment
     temp_folder: Path
     assets_folder: Path
+    docx_renderer: 'DocxRenderer'
 
-def render_docx(template_path: Path, context: dict, output_path: Path) -> Path:
-    temp_folder = Path(tempfile.mkdtemp(prefix="docmd_"))
-    renv = RenderEnv(
-        tpl=DocxTemplate(str(template_path)),
-        jinja_env=Environment(),
-        temp_folder=temp_folder,
-        assets_folder=template_path.parent / "assets",
-    )
-    try:
-        register_filters(renv)
-        register_globals(renv)
-        renv.tpl.render(context, jinja_env=renv.jinja_env)
-        renv.tpl.save(str(output_path))
-        return output_path
-    finally:
-        shutil.rmtree(temp_folder, ignore_errors=True)
+
+class DocxRenderer:
+    def render_docx(self, template_path: Path, context: dict, output_path: Path) -> Path:
+        temp_folder = Path(tempfile.mkdtemp(prefix="docmd_"))
+        renv = RenderEnv(
+            tpl=DocxTemplate(str(template_path)),
+            jinja_env=Environment(),
+            temp_folder=temp_folder,
+            assets_folder=template_path.parent / "assets",
+            docx_renderer=self,
+        )
+        try:
+            register_filters(renv)
+            register_globals(renv)
+            renv.tpl.render(context, jinja_env=renv.jinja_env)
+            renv.tpl.save(str(output_path))
+            return output_path
+        finally:
+            shutil.rmtree(temp_folder, ignore_errors=True)
 
 
 def run(folder: Path, output: Path) -> Path:
@@ -76,13 +81,16 @@ def run(folder: Path, output: Path) -> Path:
 
     context = _build_context(folder)
 
+    r = DocxRenderer()
+
     if output.suffix == ".pdf":
         docx_path = output.with_suffix(".docx")
-        render_docx(template_path, context, docx_path)
+        
+        r.render_docx(template_path, context, docx_path)
         from .pdf import convert_to_pdf
 
         result = convert_to_pdf(docx_path, output)
         # docx_path.unlink()
         return result
 
-    return render_docx(template_path, context, output)
+    return r.render_docx(template_path, context, output)
