@@ -1,15 +1,24 @@
 [project]
 name = "laudo"
 version = "0.1.0"
-description = "Convert markdown files to docx or pdf using docxtpl templates"
+description = "Generate forensic report using docxtpl templates"
 readme = "README.md"
 authors = [
     { name = "renatormc", email = "renatomartinsrmc@gmail.com" }
 ]
 requires-python = ">=3.13"
+license = { text = "MIT" }
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Legal Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Office Suites",
+]
 dependencies = [
     "beautifulsoup4>=4.14.3",
-    "click>=8.1",
     "docxtpl[subdoc]>=0.20.2",
     "PieXif>=1.1",
     "Pillow>=10.0",
@@ -21,9 +30,15 @@ dependencies = [
 [project.scripts]
 laudo = "laudo.__main__:main"
 
+[project.urls]
+Homepage = "https://github.com/renatormc/laudo"
+Repository = "https://github.com/renatormc/laudo"
+Issues = "https://github.com/renatormc/laudo/issues"
+
 [dependency-groups]
 dev = [
     "mypy>=1.20.2",
+    "pyinstaller>=6.20.0",
     "pytest>=8.0",
     "types-beautifulsoup4>=4.12.0.20250516",
     "types-pillow",

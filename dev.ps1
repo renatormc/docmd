@@ -9,19 +9,22 @@ $rest = if ($args.Count -gt 1) { $args[1..($args.Count - 1)] } else { @() }
 
 switch ($command) {
     "test" {
-        uv run pytest @rest
+        uv run pytest $rest
     }
     "sync" {
-        uv sync @rest
+        uv sync $rest
     }
     "build" {
-        uv build @rest
+        uv build $rest
     }
     "publish" {
-        uv publish @rest
+        Write-Host "→ Building package..."
+        uv build --quiet
+        Write-Host "→ Publishing to PyPI..."
+        uv publish $rest
     }
     "run" {
-        uv run laudo @rest
+        uv run laudo $rest
     }
     default {
         Write-Host "Usage: $($MyInvocation.MyCommand.Name) <command> [args...]"

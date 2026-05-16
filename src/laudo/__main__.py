@@ -1,8 +1,8 @@
+import argparse
 import os
 import stat
+import sys
 from pathlib import Path
-
-import click
 
 from . import convert
 
@@ -15,53 +15,98 @@ def _find_project_root() -> Path:
     return candidate.parent
 
 
-def _install() -> None:
+def _cmd_install() -> None:
     bindir = Path.home() / ".local" / "bin"
     bindir.mkdir(parents=True, exist_ok=True)
-    script = bindir / "laudo"
     project_root = _find_project_root()
-    content = f"""#!/usr/bin/env bash
-exec uv run --project {project_root} laudo "$@"
-"""
-    script.write_text(content.lstrip())
-    script.chmod(script.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-    click.echo(f"Installed laudo wrapper at {script}")
-    if str(bindir) not in os.environ.get("PATH", "").split(":"):
-        click.echo(f"Warning: {bindir} is not in your PATH.", err=True)
-        shell = Path(os.environ.get("SHELL", "/bin/bash")).name
-        rc: Path | None = (
-            Path.home() / ".bashrc"
-            if shell == "bash"
-            else Path.home() / ".zshrc"
-            if shell == "zsh"
-            else None
-        )
-        if rc is not None:
-            click.echo(f"Add this line to {rc}:")
-            click.echo(f'  export PATH="$PATH:{bindir}"')
+
+    if os.name == "nt":
+        script = bindir / "laudo-dev.ps1"
+        content = f"& uv run --project {project_root} laudo @args\n"
+        script.write_text(content.lstrip())
+        print(f"Installed laudo wrapper at {script}")
+        path_sep = ";"
+        path_hint = f"$env:Path = \"{bindir};$env:Path\""
+    else:
+        script = bindir / "laudo"
+        content = f"#!/usr/bin/env bash\nexec uv run --project {project_root} laudo \"$@\"\n"
+        script.write_text(content.lstrip())
+        script.chmod(script.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        print(f"Installed laudo wrapper at {script}")
+        path_sep = ":"
+        path_hint = f'export PATH="$PATH:{bindir}"'
+
+    if str(bindir) not in os.environ.get("PATH", "").split(path_sep):
+        print(f"Warning: {bindir} is not in your PATH.", file=sys.stderr)
+        if os.name == "nt":
+            print("Add this to your PowerShell profile:")
+            print(f"  {path_hint}")
+        else:
+            shell = Path(os.environ.get("SHELL", "/bin/bash")).name
+            rc: Path | None = (
+                Path.home() / ".bashrc"
+                if shell == "bash"
+                else Path.home() / ".zshrc"
+                if shell == "zsh"
+                else None
+            )
+            if rc is not None:
+                print(f"Add this line to {rc}:")
+                print(f"  {path_hint}")
 
 
-@click.command()
-@click.option("--install", is_flag=True, help="Install the laudo wrapper script to ~/.local/bin/laudo")
-@click.option("--dir", "dir_", type=click.Path(exists=True, file_okay=False, path_type=Path), default=None, help="Working directory (default: current directory)")
-@click.option("--gui", is_flag=True, help="Open the caption editor GUI")
-@click.option("--debug", is_flag=True, help="Print the template context before rendering")
-def main(install: bool, dir_: Path | None, gui: bool, debug: bool) -> None:
-    """Convert markdown files or open the caption editor."""
-    if install:
-        _install()
-        return
+def _cmd_gen(dir_: Path | None, debug: bool) -> None:
     if dir_ is not None:
         os.chdir(str(dir_))
-    if gui:
-        from .gui import run as run_gui
-
-        run_gui(Path.cwd())
-        return
     folder = Path.cwd()
     output = folder / "laudo.docx"
     result = convert(folder, output, debug=debug)
-    click.echo(f"Generated: {result}")
+    print(f"Generated: {result}")
+
+
+def _cmd_captions(dir_: Path | None) -> None:
+    if dir_ is not None:
+        os.chdir(str(dir_))
+    from .gui import run as run_gui
+
+    run_gui(Path.cwd())
+
+
+def _existing_dir(value: str) -> Path:
+    p = Path(value)
+    if not p.is_dir():
+        raise argparse.ArgumentTypeError(f"not a directory: {value}")
+    return p
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Convert markdown files or open the caption editor."
+    )
+    sub = parser.add_subparsers(dest="command")
+
+    gen_p = sub.add_parser("gen", help="Generate docx/pdf from markdown files.")
+    gen_p.add_argument("--dir", type=_existing_dir, default=None, help="Working directory (default: current directory)")
+    gen_p.add_argument("--debug", action="store_true", help="Print the template context before rendering")
+
+    cap_p = sub.add_parser("captions", help="Open the caption editor GUI.")
+    cap_p.add_argument("--dir", type=_existing_dir, default=None, help="Working directory (default: current directory)")
+
+    sub.add_parser("install", help="Install the laudo wrapper script to ~/.local/bin.")
+
+    args = parser.parse_args()
+
+    if args.command is None:
+        parser.print_help()
+        sys.exit(1)
+
+    match args.command:
+        case "install":
+            _cmd_install()
+        case "gen":
+            _cmd_gen(args.dir, args.debug)
+        case "captions":
+            _cmd_captions(args.dir)
 
 
 if __name__ == "__main__":

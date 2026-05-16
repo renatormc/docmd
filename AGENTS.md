@@ -87,12 +87,12 @@ Example template usage:
 Uses **click**:
 
 ```bash
-laudo [--dir <folder>] [--gui]
+laudo [command] [options]
 ```
 
-- `--dir <folder>` — working directory (default: current directory).
-- `--gui` — open the caption editor (PySide6).
-- `--install` — install the `laudo` wrapper script to `~/.local/bin/`.
+- `gen [--dir <folder>] [--debug]` — generate docx/pdf from markdown files (default: current directory).
+- `captions [--dir <folder>]` — open the caption editor (PySide6).
+- `install` — install the `laudo` wrapper script to `~/.local/bin/`.
 
 ## GUI (`gui/`)
 
@@ -115,9 +115,25 @@ A PySide6 caption editor that displays all images from `fotos/` as thumbnails wi
 
 ## Commands
 
-- `uv run laudo <folder> <output>` — run the CLI
-- `uv run laudo --gui` — open the caption editor
+- `uv run laudo gen` — run the CLI
+- `uv run laudo captions` — open the caption editor
 - `uv add <pkg>` — add a dependency
 - `uv sync` — sync environment
 - `uv run pytest` — run all tests
 - `uv run pytest -v` — run tests verbosely
+
+## Publishing to PyPI
+
+1. Create an API token at https://pypi.org/manage/account/token/
+2. Set it permanently on Windows (run once in PowerShell):
+
+```powershell
+[System.Environment]::SetEnvironmentVariable("UV_PUBLISH_TOKEN", "pypi-...", "User")
+```
+
+Replace `pypi-...` with your actual token. Restart PowerShell afterwards.
+To publish, run:
+
+```powershell
+.\dev.ps1 publish
+```

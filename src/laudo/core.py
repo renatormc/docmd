@@ -30,44 +30,61 @@ def _parse_context_txt(folder: Path) -> dict:
     return context
 
 
-def _build_context(folder: Path) -> dict:
-    ctx_vars = _parse_context_txt(folder)
-
+def _read_context_json(folder: Path) -> dict:
+    ctx: dict = {}
     for json_file in sorted(folder.glob("*.json")):
         key = json_file.stem.replace(" ", "_")
         content = json_file.read_text(encoding="utf-8")
-        ctx_vars[key] = json.loads(content)
+        ctx[key] = json.loads(content)
+    return ctx
 
+
+def _read_context_markdown(folder: Path, ctx_vars: dict) -> dict:
+    ctx: dict = {}
     for md_file in sorted(folder.glob("*.md")):
         key = md_file.stem.replace(" ", "_")
         content = md_file.read_text(encoding="utf-8")
-        content = Template(content).render(ctx_vars)
-        ctx_vars[key] = content
-   
+        ctx[key] = Template(content).render(ctx_vars)
+    return ctx
 
+
+def _read_context_pics(folder: Path) -> list[dict]:
     from .exif import get_caption as _get_exif_caption
     from .images import _IMAGE_EXTENSIONS, get_reduced, get_thumbnail
 
     fotos = folder / "fotos"
-    if fotos.is_dir():
-        cwd = Path.cwd()
-        os.chdir(str(folder))
-        try:
-            pics: list[dict] = []
-            for img in sorted(fotos.iterdir()):
-                if img.is_file() and img.suffix.lower() in _IMAGE_EXTENSIONS:
-                    pics.append({
-                        "refname": img.stem,
-                        "path": img,
-                        "caption": _get_exif_caption(img),
-                        "thumb": get_thumbnail(img.stem),
-                        "reduced": get_reduced(img.stem),
-                        "label": "Foto"
-                    })
-            ctx_vars["pics"] = pics
-        finally:
-            os.chdir(str(cwd))
+    if not fotos.is_dir():
+        return []
 
+    cwd = Path.cwd()
+    os.chdir(str(folder))
+    try:
+        pics: list[dict] = []
+        for img in sorted(fotos.iterdir()):
+            if img.is_file() and img.suffix.lower() in _IMAGE_EXTENSIONS:
+                pics.append({
+                    "refname": img.stem,
+                    "path": img,
+                    "caption": _get_exif_caption(img),
+                    "thumb": get_thumbnail(img.stem),
+                    "reduced": get_reduced(img.stem),
+                    "label": "Foto",
+                })
+        return pics
+    finally:
+        os.chdir(str(cwd))
+
+
+def _build_context(folder: Path) -> dict:
+    context_folder = folder / "context"
+    if not context_folder.is_dir():
+        context_folder = folder
+    ctx_vars = _parse_context_txt(context_folder)
+    ctx_vars.update(_read_context_json(context_folder))
+    ctx_vars.update(_read_context_markdown(context_folder, ctx_vars))
+    pics = _read_context_pics(folder)
+    if pics:
+        ctx_vars["pics"] = pics
     return ctx_vars
 
 @dataclass
@@ -104,10 +121,8 @@ def run(folder: Path, output: Path, *, debug: bool = False) -> Path:
     if not template_path.is_file():
         raise FileNotFoundError(f"template.docx not found in project folder or in package templates")
 
-    context_folder = folder / "context"
-    if not context_folder.is_dir():
-        context_folder = folder
-    context = _build_context(context_folder)
+    
+    context = _build_context(folder)
     if debug:
         import pprint
         print("--- context ---")

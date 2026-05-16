@@ -9,16 +9,15 @@ def test_cli_help():
         capture_output=True, text=True,
     )
     assert result.returncode == 0
-    assert "Usage:" in result.stdout
-    assert "--install" in result.stdout
-    assert "--dir" in result.stdout
-    assert "--gui" in result.stdout
-    assert "--debug" in result.stdout
+    assert "usage:" in result.stdout
+    assert "install" in result.stdout
+    assert "gen" in result.stdout
+    assert "captions" in result.stdout
 
 
 def test_cli_converts_docx(sample_project: Path):
     result = subprocess.run(
-        [sys.executable, "-m", "laudo"],
+        [sys.executable, "-m", "laudo", "gen"],
         capture_output=True, text=True,
         cwd=str(sample_project),
     )
@@ -31,7 +30,7 @@ def test_cli_converts_docx(sample_project: Path):
 
 def test_cli_debug_shows_context(sample_project: Path):
     result = subprocess.run(
-        [sys.executable, "-m", "laudo", "--debug"],
+        [sys.executable, "-m", "laudo", "gen", "--debug"],
         capture_output=True, text=True,
         cwd=str(sample_project),
     )
@@ -43,7 +42,7 @@ def test_cli_debug_shows_context(sample_project: Path):
 
 def test_cli_converts_with_dir_flag(sample_project: Path):
     result = subprocess.run(
-        [sys.executable, "-m", "laudo", "--dir", str(sample_project)],
+        [sys.executable, "-m", "laudo", "gen", "--dir", str(sample_project)],
         capture_output=True, text=True,
     )
     assert result.returncode == 0
@@ -55,7 +54,7 @@ def test_cli_converts_with_dir_flag(sample_project: Path):
 
 def test_cli_install():
     result = subprocess.run(
-        [sys.executable, "-m", "laudo", "--install"],
+        [sys.executable, "-m", "laudo", "install"],
         capture_output=True, text=True,
     )
     assert result.returncode == 0
