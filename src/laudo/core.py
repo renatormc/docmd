@@ -7,8 +7,11 @@ import json
 from docxtpl import DocxTemplate
 from jinja2 import Environment, Template
 
+from laudo.filters.markdown_filter import MarkdownFilter
+from laudo.globals.inline_image import InlineImage
+from laudo.globals.subdoc_func import SubdocFunc
 from laudo.reference_replacer import DocxReferenceReplacer
-
+from laudo.odttpl import Renderer
 from .filters import register as register_filters
 from .globals import register as register_globals
 
@@ -103,8 +106,12 @@ def render_docx(template_path: Path, context: dict, output_path: Path, replace_r
         assets_folder=template_path.parent / "assets",
     )
     try:
-        register_filters(renv)
-        register_globals(renv)
+        renv.jinja_env.filters["markdown"] = MarkdownFilter(renv)
+        register_filters(renv.jinja_env)
+
+        renv.jinja_env.globals["subdoc"] = SubdocFunc(renv)
+        renv.jinja_env.globals["image"] = InlineImage(renv)
+        register_globals(renv.jinja_env)
         renv.tpl.render(context, jinja_env=renv.jinja_env)
         if replace_references:
             dr = DocxReferenceReplacer()
@@ -115,12 +122,35 @@ def render_docx(template_path: Path, context: dict, output_path: Path, replace_r
         shutil.rmtree(temp_folder, ignore_errors=True)
 
 
+def render_odt(template_path: Path, context: dict, output_path: Path, replace_references=True) -> Path:
+    rd = Renderer()
+
+    register_filters(rd.environment)
+    register_globals(rd.environment)
+
+    rd.render(str(template_path), **context)
+    rd.save(output_path)
+    return output_path
+
+
+def render_doc(template_path: Path, context: dict, output_path: Path, replace_references=True) -> Path:
+    if template_path.suffix == ".docx":
+        return render_docx(template_path, context, output_path, replace_references)
+    if template_path.suffix == ".odt":
+        return render_odt(template_path, context, output_path, replace_references)
+    raise ValueError(f"Unsupported template format: {template_path.suffix}")
+
+
+
 def run(folder: Path, output: Path, *, debug: bool = False) -> Path:
     template_path = folder / "template.docx"
     if not template_path.is_file():
-        raise FileNotFoundError(f"template.docx not found in project folder or in package templates")
+        template_path = folder / "template.odt"
+        if not template_path.is_file():
+            raise FileNotFoundError(f"template.docx or template.odt not found in project folder or in package templates")
+        
+    output = output.with_suffix(template_path.suffix)
 
-    
     context = _build_context(folder)
     if debug:
         import pprint
@@ -129,12 +159,12 @@ def run(folder: Path, output: Path, *, debug: bool = False) -> Path:
         print("---------------")
 
     if output.suffix == ".pdf":
-        docx_path = output.with_suffix(".docx")
-        render_docx(template_path, context, docx_path)
+        doc_path = output.with_suffix(template_path.suffix)
+        render_doc(template_path, context, doc_path)
         from .pdf import convert_to_pdf
 
-        result = convert_to_pdf(docx_path, output)
-        docx_path.unlink()
+        result = convert_to_pdf(doc_path, output)
+        doc_path.unlink()
         return result
 
-    return render_docx(template_path, context, output)
+    return render_doc(template_path, context, output)

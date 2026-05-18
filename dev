@@ -28,6 +28,9 @@ case "${1:-help}" in
         echo "  run [args]   Run laudo CLI"
         exit 1
         ;;
+    copy-libs)
+        rclone sync  "$SRCDIR/odttpl/src/odttpl" "$PROJECT_ROOT/src/laudo/odttpl"
+        ;;
     *)
         exec uv run laudo "$@"
         ;;
