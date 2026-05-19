@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+from typing import cast
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
@@ -124,7 +125,7 @@ class CaptionEditor(QWidget):
 
     def statusBar(self) -> QStatusBar:
         parent = self.window()
-        sb = parent.findChild(QStatusBar)
+        sb = cast(QStatusBar | None, parent.findChild(QStatusBar))
         if sb is None:
             sb = QStatusBar(parent)
             layout = parent.layout()
