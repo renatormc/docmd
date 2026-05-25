@@ -7,7 +7,7 @@ from .db import set_caption as _set_caption
 
 _IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tiff", ".tif", ".webp"}
 _THUMB_MAX = 300
-_REDUCED_MAX = 1920
+_REDUCED_MAX = 450
 
 
 def _fotos_dir() -> Path:
